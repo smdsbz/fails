@@ -20,7 +20,7 @@ from my_utils.read_match_data import *
 
 TEAM_DATA_PATH = './teamData.csv'
 MATCH_RESULT_PATH = './matchDataTrain.csv'
-TEST_DATA_PATH = './matchDataTest.csv'
+TEST_DATA_PATH = './matchDataTest_Self.csv'
 
 
 ######## get data from .csv files ########

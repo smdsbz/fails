@@ -24,7 +24,7 @@ from linear_model import *
 # from import
 FEAT_LEN = len(team_features['0'])
 
-max_steps = 200000
+max_steps = 500000
 
 BATCH_SIZE = 100
 
@@ -234,6 +234,14 @@ def run_training():
                 print('Test data eval:')
                 do_eval(sess, eval_correct, feat_hold, pred_hold,
                         eval_flag=True)
+
+
+
+def moment_of_truth(path='./matchDataTest.csv'):
+
+    question_mark = pd.read_csv(path)
+
+    
 
 
 if __name__ == '__main__':
