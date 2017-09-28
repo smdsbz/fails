@@ -31,13 +31,17 @@ def read_match_data(path):
         host_team = line[1]['主场队名']
         match_result = [ int(s) for s in line[1]['比分'].split(':') ]
 
-        match_result_modified = \
-            (match_result[0] - match_result[1]) / (match_result[0] + match_result[1])
+        # match_result_modified = \
+        #     (match_result[0] - match_result[1]) / (match_result[0] + match_result[1])
+        if match_result[0] > match_result[1]:
+            match_result_modified = [1, 0]
+        else:
+            match_result_modified = [0, 1]
 
         match_results.append([
             str(host_team),
             str(guest_team),
-            match_result_modified * 1e+2
+            match_result_modified
         ])
 
     return match_results

@@ -72,7 +72,7 @@ def next_batch(size=100):
             my_input_x(match_results[idx])
         )
         batch_ys.append(
-            [my_input_y(match_results[idx])]
+            my_input_y(match_results[idx])
         )
     return (
             np.array(batch_xs, dtype=np.float32),
@@ -88,61 +88,69 @@ def test_batch():
                 my_input_x(test_set[idx])
         )
         batch_ys.append(
-                [my_input_y(test_set[idx])]
+                my_input_y(test_set[idx])
         )
-    # print(batch_xs, batch_ys)
+    # for x in batch_xs: print(x[-1], end=',\n')  # NOTE: check 1-fit here!
     return (
             np.array(batch_xs, dtype=np.float32),
             np.array(batch_ys, dtype=np.float32)
     )
 
 
-######## build computable graph ########
-
-# x     - diff between two team features
-# y     - true value (diff of match_results)
-# y_    - predicted value
-# W, b  - param to be trained
-x = tf.placeholder(tf.float32, shape=[None, len(team_features['0'])])
-W = tf.Variable(tf.zeros([len(team_features['0']), 1], tf.float32))
-# W = tf.Print(W, [W], message='W: ')
-b = tf.Variable(tf.zeros([1], tf.float32))
-
-# NOTE: linear model definition
-y = tf.matmul(x, W) + b
-y = tf.convert_to_tensor(y, dtype=tf.float32)
-y_ = tf.placeholder(tf.float32, [None, 1])
-
-# print(x.dtype, W.dtype, b.dtype, y.dtype, y_.dtype)
-
-loss = tf.reduce_sum(tf.square(y - y_))
-train_step = tf.train.GradientDescentOptimizer(1e-8).minimize(loss)
 
 
-######## RUN ########
 
-sess = tf.InteractiveSession()
-tf.global_variables_initializer().run()
+if __name__ == '__main__':
 
-for _ in range(100):
-    batch_xs, batch_ys = next_batch(size=50)
-    # print(batch_xs, batch_ys)
-    _, loss_val = sess.run([train_step, loss], feed_dict={x: batch_xs, y_: batch_ys})
-    print('loss =', loss_val)
+    ######## build computable graph ########
+
+    # x     - diff between two team features
+    # y     - predicted value
+    # y_    - true value (diff of match_results)
+    # W, b  - param to be trained
+    x = tf.placeholder(tf.float32, shape=[None, len(team_features['0'])])
+    W = tf.Variable(tf.zeros([len(team_features['0']), 2], tf.float32))
+    # W = tf.Print(W, [W], message='W: ')
+    b = tf.Variable(tf.zeros([2], tf.float32))
+
+    # NOTE: linear model definition
+    y = tf.matmul(x, W) + b
+    y = tf.convert_to_tensor(y, dtype=tf.float32)
+    y_ = tf.placeholder(tf.float32, [None, 2])
+
+    # print(x.dtype, W.dtype, b.dtype, y.dtype, y_.dtype)
+
+    loss = tf.reduce_sum(tf.square(y - y_))
+    train_step = tf.train.GradientDescentOptimizer(3e-7).minimize(loss)
 
 
-######## evaluate ########
+    ######## RUN ########
 
-zero_valve = tf.constant(0, dtype=tf.float32)
+    sess = tf.InteractiveSession()
+    tf.global_variables_initializer().run()
 
-# TODO: TensorFlow Comparison Operators
-correct_prediction = tf.equal(
-        tf.less(y, zero_valve),
-        tf.less(y_, zero_valve)
-)
+    for step in range(20000):
+        batch_xs, batch_ys = next_batch(size=100)
+        _, loss_val = sess.run([train_step, loss], feed_dict={x: batch_xs, y_: batch_ys})
+        if step % 100 == 0:
+            print('loss = %.3f, at step %d' % (loss_val, step))
 
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-test_xs, test_ys = test_batch()
+    ######## evaluate ########
 
-print(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys}))
+    # zero_valve = tf.constant(0, dtype=tf.float32)
+
+    # TODO: TensorFlow Comparison Operators
+    correct_prediction = tf.equal(
+            tf.argmax(y, 1),
+            tf.argmax(y_, 1)
+    )
+
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    test_xs, test_ys = test_batch()
+
+    accuracy, W_list = sess.run([accuracy, W], feed_dict={x: test_xs, y_: test_ys})
+
+    print('final accuracy = %.4f' % (accuracy))
+    print('W is...\n%s' % (W_list))
