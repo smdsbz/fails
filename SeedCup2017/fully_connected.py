@@ -24,7 +24,7 @@ from linear_model import *
 # from import
 FEAT_LEN = len(team_features['0'])
 
-max_steps = 500000
+max_steps = 150000
 
 BATCH_SIZE = 100
 
@@ -200,7 +200,7 @@ def run_training():
 
         init = tf.global_variables_initializer()
 
-        # saver = tf.train.Saver()
+        saver = tf.train.Saver()
 
         sess = tf.Session()
 
@@ -225,8 +225,8 @@ def run_training():
 
             if (step + 1) == max_steps:
 
-                # final_file = './model.ckpt'
-                # saver.save(sess, final_file, global_step=step)
+                final_file = './trained_save/model.ckpt'
+                saver.save(sess, final_file)
 
                 print('Training data eval:')
                 do_eval(sess, eval_correct, feat_hold, pred_hold)
@@ -237,11 +237,40 @@ def run_training():
 
 
 
-def moment_of_truth(path='./matchDataTest.csv'):
+        def moment_of_truth(path='./matchDataTest.csv'):
 
-    question_mark = pd.read_csv(path)
+            question_mark = pd.read_csv(path)
+            output = []
 
-    
+            # test_x, test_y = placeholder_inputs(batch_size=1)
+            #
+            # logits = inference(test_x, hidden1_unit, hidden2_unit)
+
+            for line in question_mark.iterrows():
+                guest_team = line[1]['客场队名']
+                host_team = line[1]['主场队名']
+
+                feed_dict = {
+                    feat_hold: [my_input_x([str(guest_team), str(host_team)]) for _ in range(BATCH_SIZE)],
+                    pred_hold: [0 for _ in range(BATCH_SIZE)]
+                }
+                # print(feed_dict)
+
+                pred_val = sess.run(logits, feed_dict=feed_dict)[0]
+                # print(pred_val)
+                output.append(1 if pred_val[0] == max(pred_val) else 0)
+
+            pd.Series(output).to_csv(
+                    'predictPro.csv',
+                    header=['主场赢得比赛的置信度'],
+                    index=False
+            )
+
+            return True
+
+
+        moment_of_truth()
+
 
 
 if __name__ == '__main__':
